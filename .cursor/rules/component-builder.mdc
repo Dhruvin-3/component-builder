@@ -1,0 +1,66 @@
+---
+description: Component Builder app — Next.js App Router + Cursor SDK conventions
+globs: **/*
+alwaysApply: true
+---
+
+# Component Builder
+
+Next.js App Router app: chat sidebar (left) + generated code panel (right).
+
+## Architecture
+
+```
+app/page.tsx          → layout shell, shared state (code, componentName)
+components/           → ChatSidebar, CodePanel, MessageBubble (client components)
+app/api/generate/     → server route for AI code generation
+lib/                  → prompt builders, SDK/Gemini helpers
+```
+
+- Keep API keys (`CURSOR_API_KEY`, `GEMINI_API_KEY`) in `.env.local` — never expose to the client.
+- All AI calls go through `app/api/generate/route.ts`, not from browser components.
+
+## Cursor SDK (code generation)
+
+Use `@cursor/sdk` server-side for one-shot component generation:
+
+```typescript
+import { Agent } from "@cursor/sdk";
+
+const result = await Agent.prompt(buildPrompt(userMessage), {
+  apiKey: process.env.CURSOR_API_KEY!,
+  model: { id: "composer-2.5" },
+  local: { cwd: process.cwd() },
+});
+```
+
+- Prefer `Agent.prompt` for single-request generation; use `Agent.create` + `agent.send` only for multi-turn.
+- Strip markdown fences from responses before displaying code.
+- Return `{ code, componentName }` from the API route.
+
+## Next.js patterns
+
+- `"use client"` only on interactive components (`ChatSidebar`, `CodePanel`).
+- API routes stay server-only; use `NextRequest` / `NextResponse`.
+- Lift generated code state to `page.tsx`; pass down via props/callbacks.
+
+## UI conventions
+
+- Dark theme with Tailwind (`bg-gray-900`, `bg-gray-950`, `violet-600` accents).
+- Sidebar: `overflow-x-hidden`, message bubbles use `break-words min-w-0` (no horizontal scroll).
+- Send button disabled when `!input.trim()` or `isLoading`.
+- Code panel: syntax highlighting + copy-to-clipboard with feedback.
+
+## Generated component rules
+
+Prompt the agent to return:
+- Valid TSX with Tailwind CSS only
+- Named export (`export function ComponentName`)
+- First line: `// ComponentName`
+- No markdown fences or explanations in output
+
+## Error handling
+
+- Retry transient failures (503, 429, `fetch failed`) with backoff.
+- Return short, user-friendly errors in chat — never dump raw API URLs.
+- Distinguish: missing key, invalid key, model unavailable, network/high demand.

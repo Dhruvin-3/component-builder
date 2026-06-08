@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body { margin: 0; padding: 24px; background: #111827; min-height: 100vh; box-sizing: border-box; }
+    *, *::before, *::after { box-sizing: inherit; }
+    #root { width: 100%; }
+    img, video { max-width: 100%; height: auto; }
+    .preview-error { color: #f87171; font-family: ui-monospace, monospace; font-size: 13px; padding: 16px; white-space: pre-wrap; background: #1f2937; border-radius: 8px; border: 1px solid #374151; }
+    .preview-loading { color: #9ca3af; font-size: 13px; padding: 16px; }
+  </style>
+</head>
+<body>
+  <div id="root"><p class="preview-loading">Loading preview…</p></div>
+  <script>
+    function resolveMediaUrl(value) {
+      if (!value) return "";
+      if (typeof value === "string") return value;
+      if (typeof value === "object") {
+        return value.src || value.url || value.image || value.imageUrl ||
+          value.imageSrc || value.coverImage || value.featuredImage || value.photo ||
+          value.video || value.videoSrc || value.videoUrl || value.thumbnail || value.poster || "";
+      }
+      return "";
+    }
+
+    function installMediaPatch() {
+      if (window.__mediaPatchInstalled) return;
+      const original = React.createElement;
+      React.createElement = function (type, props) {
+        if (props) {
+          const args = Array.from(arguments);
+          const next = { ...props };
+          if (type === "img" || type === "video" || type === "source") {
+            if (next.src) next.src = resolveMediaUrl(next.src);
+            if (next.poster) next.poster = resolveMediaUrl(next.poster);
+          }
+          if (type === "a" && next.href) next.href = resolveMediaUrl(next.href) || "#";
+          args[1] = next;
+          return original.apply(React, args);
+        }
+        return original.apply(React, arguments);
+      };
+      window.__mediaPatchInstalled = true;
+    }
+
+    class PreviewErrorBoundary extends React.Component {
+      constructor(props) { super(props); this.state = { error: null }; }
+      static getDerivedStateFromError(error) { return { error }; }
+      render() {
+        if (this.state.error) {
+          return React.createElement("pre", { className: "preview-error" },
+            "Preview error: " + this.state.error.message);
+        }
+        return this.props.children;
+      }
+    }
+
+    window.PreviewErrorBoundary = PreviewErrorBoundary;
+
+    function renderPreview(payload) {
+      installMediaPatch();
+      const rootEl = document.getElementById("root");
+      rootEl.innerHTML = "";
+
+      try {
+        const { script, name, previewProps } = payload;
+        const hooks = "const { useState, useEffect, useRef, useCallback, useMemo, useReducer, useContext, useId, useLayoutEffect, Fragment, Component } = React;";
+        const propsSetup = "const previewProps = " + JSON.stringify(previewProps) + ";" +
+          "previewProps.onClick = function(){};" +
+          "previewProps.onSubmit = function(e){ if(e && e.preventDefault) e.preventDefault(); };" +
+          "previewProps.onChange = function(){};";
+
+        const full = "var PreviewErrorBoundary = window.PreviewErrorBoundary;\n" +
+          hooks + "\n" + propsSetup + "\n" + script + "\n" +
+          "const ComponentToPreview = " + name + ";\n" +
+          "const root = ReactDOM.createRoot(document.getElementById('root'));\n" +
+          "root.render(React.createElement(PreviewErrorBoundary, null, React.createElement(ComponentToPreview, previewProps)));\n";
+
+        const compiled = Babel.transform(full, {
+          filename: "preview.tsx",
+          presets: ["react", "typescript"],
+        }).code;
+        new Function("React", "ReactDOM", compiled)(React, ReactDOM);
+
+        window.parent.postMessage({ type: "PREVIEW_RENDERED" }, window.location.origin);
+      } catch (e) {
+        rootEl.innerHTML = '<pre class="preview-error">Compile error: ' + e.message + '</pre>';
+        window.parent.postMessage({ type: "PREVIEW_ERROR", error: e.message }, window.location.origin);
+      }
+    }
+
+    window.addEventListener("message", function (event) {
+      if (event.origin !== window.location.origin) return;
+      if (event.data && event.data.type === "RENDER") {
+        renderPreview(event.data.payload);
+      }
+    });
+
+    window.parent.postMessage({ type: "PREVIEW_READY" }, window.location.origin);
+  </script>
+</body>
+</html>
