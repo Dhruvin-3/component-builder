@@ -34,8 +34,10 @@ export default function ComponentCard({
         if (e.key === "Enter" || e.key === " ") onSelect(component.id);
       }}
       className={cn(
-        "group relative cursor-pointer transition-all py-4",
-        isSelected && "ring-2 ring-primary/50 border-primary/50 bg-primary/10"
+        "group relative cursor-pointer py-4 transition-all duration-200",
+        isSelected
+          ? "ring-2 ring-primary bg-primary/10 shadow-[0_0_0_1px_var(--primary),0_8px_24px_-8px_color-mix(in_oklch,var(--primary)_35%,transparent)]"
+          : "ring-1 ring-border hover:ring-primary/40 hover:bg-muted/50"
       )}
     >
       <CardContent className="px-4">

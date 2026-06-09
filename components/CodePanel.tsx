@@ -99,11 +99,6 @@ export default function CodePanel({
     <div className="flex-1 flex flex-col bg-background min-w-0 overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3 bg-card flex-shrink-0">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="flex gap-1.5">
-            <span className="size-3 rounded-full bg-red-500/70" />
-            <span className="size-3 rounded-full bg-yellow-500/70" />
-            <span className="size-3 rounded-full bg-green-500/70" />
-          </div>
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground font-mono">{componentName}.tsx</span>

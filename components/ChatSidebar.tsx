@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import ThemeToggle from "@/components/theme-toggle";
 
 interface ChatSidebarProps {
   onCodeGenerated: (code: string, componentName: string, prompt: string) => void;
@@ -78,14 +79,19 @@ export default function ChatSidebar({ onCodeGenerated }: ChatSidebarProps) {
   return (
     <aside className="w-80 min-w-0 flex-shrink-0 flex flex-col h-full bg-sidebar border-r border-sidebar-border overflow-hidden">
       <div className="px-5 py-4">
-        <div className="flex items-center gap-2.5">
-          <div className="size-8 rounded-lg bg-primary flex items-center justify-center">
-            <Code2 className="size-4 text-primary-foreground" />
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="size-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
+              <Code2 className="size-4 text-primary-foreground" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-sm font-semibold text-sidebar-foreground truncate">
+                Component Builder
+              </h1>
+              <p className="text-xs text-muted-foreground">Powered by Cursor AI</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-sm font-semibold text-sidebar-foreground">Component Builder</h1>
-            <p className="text-xs text-muted-foreground">Powered by Cursor AI</p>
-          </div>
+          <ThemeToggle />
         </div>
       </div>
 
