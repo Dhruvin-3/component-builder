@@ -29,11 +29,7 @@ async function cursorFetch<T>(path: string, options: RequestInit = {}): Promise<
   return res.json() as Promise<T>;
 }
 
-export function buildPrompt(userMessage: string): string {
-  return `You are an expert React component generator.
-
-Rules:
-- Return ONLY valid TSX code, no markdown fences, no explanations, no comments outside the code.
+const BASE_RULES = `- Return ONLY valid TSX code, no markdown fences, no explanations, no comments outside the code.
 - Use Tailwind CSS for all styling.
 - The component must be a named export (e.g. export function Button(...)).
 - The first line of the code must be the component name as a comment like: // ComponentName
@@ -43,7 +39,39 @@ Rules:
 - For image grids/cards, default to 3–4 demo images using https://picsum.photos/seed/{name}/600/400 URLs.
 - For video components, default to demo MP4 URLs (e.g. https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4) with poster thumbnails.
 - Never call .map() on a prop without a default array fallback (use images = [] or images?.map).
-- For <img> and <video>, always set src to a string URL (use item.src or item.url), never pass the whole item object as src.
+- For <img> and <video>, always set src to a string URL (use item.src or item.url), never pass the whole item object as src.`;
+
+export interface RefinementContext {
+  existingCode: string;
+  componentName: string;
+}
+
+export function buildPrompt(
+  userMessage: string,
+  refinement?: RefinementContext
+): string {
+  if (refinement) {
+    return `You are an expert React component generator.
+
+Modify the existing component according to the user's request. Preserve the component's purpose and structure unless the user asks to change them.
+
+Rules:
+${BASE_RULES}
+- Keep the component named "${refinement.componentName}" unless the user explicitly asks to rename it.
+- Return the complete updated component — not a diff or partial snippet.
+
+Existing component (${refinement.componentName}.tsx):
+\`\`\`tsx
+${refinement.existingCode}
+\`\`\`
+
+Modification request: ${userMessage}`;
+  }
+
+  return `You are an expert React component generator.
+
+Rules:
+${BASE_RULES}
 
 User request: ${userMessage}`;
 }
@@ -73,13 +101,20 @@ async function waitForRun(agentId: string, runId: string): Promise<RunResponse> 
   throw new Error("Cursor agent run timed out");
 }
 
-export async function generateComponentCode(prompt: string): Promise<string> {
+export async function generateComponentCode(
+  prompt: string,
+  refinement?: RefinementContext
+): Promise<string> {
+  const agentName = refinement
+    ? `Refine ${refinement.componentName}: ${prompt.slice(0, 60)}`
+    : `Component: ${prompt.slice(0, 80)}`;
+
   const { agent, run } = await cursorFetch<CreateAgentResponse>("/v1/agents", {
     method: "POST",
     body: JSON.stringify({
-      prompt: { text: buildPrompt(prompt) },
+      prompt: { text: buildPrompt(prompt, refinement) },
       model: { id: "composer-2.5" },
-      name: `Component: ${prompt.slice(0, 80)}`,
+      name: agentName,
     }),
   });
 

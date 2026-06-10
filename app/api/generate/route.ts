@@ -5,7 +5,7 @@ export const maxDuration = 180;
 
 export async function POST(req: NextRequest) {
   try {
-    const { prompt } = await req.json();
+    const { prompt, existingCode, componentName: existingName } = await req.json();
 
     if (!prompt || typeof prompt !== "string") {
       return NextResponse.json(
@@ -14,7 +14,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const raw = await generateComponentCode(prompt);
+    const hasExistingCode =
+      typeof existingCode === "string" && existingCode.trim().length > 0;
+    const hasComponentName =
+      typeof existingName === "string" && existingName.trim().length > 0;
+
+    if (hasExistingCode !== hasComponentName) {
+      return NextResponse.json(
+        {
+          error:
+            "existingCode and componentName must both be provided for refinement",
+        },
+        { status: 400 }
+      );
+    }
+
+    const refinement =
+      hasExistingCode && hasComponentName
+        ? { existingCode: existingCode.trim(), componentName: existingName.trim() }
+        : undefined;
+
+    const raw = await generateComponentCode(prompt, refinement);
 
     const code = raw
       .replace(/^```(?:tsx|typescript|jsx|js)?\n?/m, "")

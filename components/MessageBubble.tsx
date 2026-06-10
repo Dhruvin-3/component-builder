@@ -1,10 +1,6 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Message } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-export interface Message {
-  role: "user" | "assistant";
-  content: string;
-}
 
 interface MessageBubbleProps {
   message: Message;

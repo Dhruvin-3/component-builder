@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import ChatSidebar from "@/components/ChatSidebar";
 import RightPanel, { PanelView } from "@/components/RightPanel";
+import { deleteChatHistory } from "@/lib/chatStorage";
 import { SavedComponent } from "@/lib/types";
 
 const STORAGE_KEY = "component-builder-saved";
@@ -33,7 +34,30 @@ export default function Home() {
     }
   }, [savedComponents]);
 
-  function handleCodeGenerated(code: string, name: string, prompt: string) {
+  function handleCodeGenerated(
+    code: string,
+    name: string,
+    prompt: string,
+    updateId?: string
+  ): string {
+    if (updateId) {
+      setSavedComponents((prev) =>
+        prev.map((c) =>
+          c.id === updateId
+            ? {
+                ...c,
+                code,
+                componentName: name,
+                prompt: `${c.prompt} → ${prompt}`,
+              }
+            : c
+        )
+      );
+      setSelectedId(updateId);
+      setPanelView("code");
+      return updateId;
+    }
+
     const newComponent: SavedComponent = {
       id: crypto.randomUUID(),
       prompt,
@@ -44,6 +68,7 @@ export default function Home() {
     setSavedComponents((prev) => [newComponent, ...prev]);
     setSelectedId(newComponent.id);
     setPanelView("code");
+    return newComponent.id;
   }
 
   function handleSelect(id: string) {
@@ -52,6 +77,7 @@ export default function Home() {
   }
 
   function handleDelete(id: string) {
+    deleteChatHistory(id);
     setSavedComponents((prev) => {
       const next = prev.filter((c) => c.id !== id);
       if (selectedId === id) {
@@ -63,7 +89,13 @@ export default function Home() {
 
   return (
     <main className="flex h-screen bg-background overflow-hidden">
-      <ChatSidebar onCodeGenerated={handleCodeGenerated} />
+      <ChatSidebar
+        selectedComponent={
+          savedComponents.find((c) => c.id === selectedId) ?? null
+        }
+        selectedId={selectedId}
+        onCodeGenerated={handleCodeGenerated}
+      />
       <RightPanel
         savedComponents={savedComponents}
         selectedId={selectedId}
