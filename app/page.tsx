@@ -87,6 +87,12 @@ export default function Home() {
     });
   }
 
+  function handleCodeChange(id: string, code: string, componentName: string) {
+    setSavedComponents((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, code, componentName } : c))
+    );
+  }
+
   return (
     <main className="flex h-screen bg-background overflow-hidden">
       <ChatSidebar
@@ -103,6 +109,7 @@ export default function Home() {
         onViewChange={setPanelView}
         onSelect={handleSelect}
         onDelete={handleDelete}
+        onCodeChange={handleCodeChange}
       />
     </main>
   );

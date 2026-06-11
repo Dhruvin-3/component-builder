@@ -31,6 +31,12 @@ export function cleanComponentCode(code: string): { cleaned: string; name: strin
   return { cleaned, name };
 }
 
+export function extractComponentName(code: string): string {
+  const commentMatch = code.match(/^\/\/\s*(\w+)/);
+  if (commentMatch) return commentMatch[1];
+  return cleanComponentCode(code).name;
+}
+
 export function getPreviewPayload(code: string, componentName: string) {
   const { cleaned, name } = cleanComponentCode(code);
   return {

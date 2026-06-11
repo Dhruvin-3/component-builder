@@ -13,6 +13,7 @@ interface RightPanelProps {
   onViewChange: (view: PanelView) => void;
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
+  onCodeChange: (id: string, code: string, componentName: string) => void;
 }
 
 export default function RightPanel({
@@ -22,6 +23,7 @@ export default function RightPanel({
   onViewChange,
   onSelect,
   onDelete,
+  onCodeChange,
 }: RightPanelProps) {
   const selected = savedComponents.find((c) => c.id === selectedId);
 
@@ -41,9 +43,15 @@ export default function RightPanel({
     <CodePanel
       code={selected?.code ?? ""}
       componentName={selected?.componentName ?? ""}
+      componentId={selected?.id}
       prompt={selected?.prompt}
       savedCount={savedComponents.length}
       onViewHistory={() => onViewChange("history")}
+      onCodeChange={
+        selected
+          ? (code, componentName) => onCodeChange(selected.id, code, componentName)
+          : undefined
+      }
     />
   );
 }
