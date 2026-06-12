@@ -1,4 +1,5 @@
 import { X } from "lucide-react";
+import ComponentThumbnail from "@/components/ComponentThumbnail";
 import { SavedComponent } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,13 +35,17 @@ export default function ComponentCard({
         if (e.key === "Enter" || e.key === " ") onSelect(component.id);
       }}
       className={cn(
-        "group relative cursor-pointer py-4 transition-all duration-200",
+        "group relative cursor-pointer overflow-hidden py-0 transition-all duration-200",
         isSelected
           ? "ring-2 ring-primary bg-primary/10 shadow-[0_0_0_1px_var(--primary),0_8px_24px_-8px_color-mix(in_oklch,var(--primary)_35%,transparent)]"
           : "ring-1 ring-border hover:ring-primary/40 hover:bg-muted/50"
       )}
     >
-      <CardContent className="px-4">
+      <ComponentThumbnail
+        code={component.code}
+        componentName={component.componentName}
+      />
+      <CardContent className="px-4 py-4">
         <div className="flex items-start justify-between gap-2 pr-4">
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold truncate">{component.componentName}</p>

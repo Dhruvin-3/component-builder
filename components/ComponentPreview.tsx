@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
-import { getPreviewPayload } from "@/lib/preview";
+import { usePreviewIframe } from "@/lib/usePreviewIframe";
 
 interface ComponentPreviewProps {
   code: string;
@@ -9,40 +8,7 @@ interface ComponentPreviewProps {
 }
 
 export default function ComponentPreview({ code, componentName }: ComponentPreviewProps) {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [ready, setReady] = useState(false);
-  const [rendering, setRendering] = useState(true);
-  const payloadRef = useRef(getPreviewPayload(code, componentName));
-
-  const sendRender = useCallback(() => {
-    const iframe = iframeRef.current?.contentWindow;
-    if (!iframe || !ready) return;
-
-    setRendering(true);
-    payloadRef.current = getPreviewPayload(code, componentName);
-    iframe.postMessage(
-      { type: "RENDER", payload: payloadRef.current },
-      window.location.origin
-    );
-  }, [code, componentName, ready]);
-
-  useEffect(() => {
-    function onMessage(event: MessageEvent) {
-      if (event.origin !== window.location.origin) return;
-      if (event.data?.type === "PREVIEW_READY") {
-        setReady(true);
-      }
-      if (event.data?.type === "PREVIEW_RENDERED" || event.data?.type === "PREVIEW_ERROR") {
-        setRendering(false);
-      }
-    }
-    window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
-  }, []);
-
-  useEffect(() => {
-    if (ready) sendRender();
-  }, [ready, sendRender]);
+  const { iframeRef, rendering } = usePreviewIframe(code, componentName);
 
   return (
     <div className="relative w-full h-full bg-gray-900">
